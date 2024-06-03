@@ -1,6 +1,13 @@
 package mysns;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UsersDAO {
 	Connection conn = null;
@@ -96,6 +103,46 @@ public class UsersDAO {
             pstmt.setInt(1, aid);
             pstmt.executeUpdate();
         }
+    }
+    
+    // 모든 사용자를 읽어오는 메서드
+    public List<Users> getAll() throws SQLException {
+        open();
+        List<Users> userList = new ArrayList<>();
+        String sql = "SELECT * FROM Users";
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String id = rs.getString("id");
+                String password = rs.getString("password");
+                String name = rs.getString("name");
+                Users user = new Users(id, password, name);
+                userList.add(user);
+            }
+        } finally {
+            close();
+        }
+        return userList;
+    }
+    
+    // 사용자 ID로 사용자 찾기 메서드
+    public Users findUserById(String id) throws SQLException {
+        open();
+        String sql = "SELECT * FROM Users WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    Users user = new Users();
+                    user.setId(rs.getString("id"));
+                    user.setPassword(rs.getString("password"));
+                    user.setName(rs.getString("name"));
+                    return user;
+                }
+            }
+        } finally {
+            close();
+        }
+        return null;
     }
 }
 

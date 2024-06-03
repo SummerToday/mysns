@@ -8,7 +8,14 @@ public class Users {
     private String password;
     private String name;
     private Timestamp created_At;
-
+    
+    public Users() {}
+    
+    public Users(String id, String password, String name) {
+        this.id = id;
+        this.password = password;
+        this.name = name;
+    }
     // Getters and Setters
     public int getAid() {
         return aid;
