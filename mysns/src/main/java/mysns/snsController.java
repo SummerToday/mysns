@@ -83,7 +83,7 @@ public class snsController extends HttpServlet {
 					response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to retrieve image");
 				}
 			} else {
-				List<Feeds> list = feedDao.getAll();
+				List<Feeds> list = feedDao.getAll(user.getId());
 				request.setAttribute("feedlist", list);
 				getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
 			}
@@ -114,11 +114,11 @@ public class snsController extends HttpServlet {
 				updateFeed(request, response, feedDao);
 				break;
 			case "listFeeds":
-                listFeeds(request, response);
+                listFeeds(request, response, user);
 			case "myFeeds":
                 myFeeds(request, response, feedDao, user);
 			case "showAllFeeds":
-                showAllFeeds(request, response, feedDao);
+				 showAllFeeds(request, response, feedDao, user);
 			default:
 				// 정의되지 않은 action 값에 대한 처리
 				response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -191,7 +191,7 @@ public class snsController extends HttpServlet {
 			}
 
 			FeedsDAO feedDao = new FeedsDAO();
-			List<Feeds> list = feedDao.getAll();
+			List<Feeds> list = feedDao.getAll(user.getId());
 			request.setAttribute("feedlist", list);
 			getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
 		} else {
@@ -217,65 +217,68 @@ public class snsController extends HttpServlet {
 	}
 
 	protected void write(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		HttpSession session = request.getSession();
-		Users user = (Users) session.getAttribute("user");
+	        throws ServletException, IOException {
+	    HttpSession session = request.getSession();
+	    Users user = (Users) session.getAttribute("user");
 
-		if (user == null) {
-			response.sendRedirect("login.jsp");
-			return;
-		}
+	    if (user == null) {
+	        response.sendRedirect("login.jsp");
+	        return;
+	    }
 
-		String content = request.getParameter("content");
-		Timestamp created_at = new Timestamp(System.currentTimeMillis());
-		byte[] imageData = null;
+	    String content = request.getParameter("content");
+	    boolean isPrivate = "true".equals(request.getParameter("private"));
+	    Timestamp created_at = new Timestamp(System.currentTimeMillis());
+	    byte[] imageData = null;
 
-		try {
-			Part imagePart = request.getPart("image");
-			if (imagePart != null && imagePart.getSize() > 0) {
-				try (InputStream inputStream = imagePart.getInputStream();
-						ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-					byte[] buffer = new byte[4096];
-					int bytesRead;
-					while ((bytesRead = inputStream.read(buffer)) != -1) {
-						outputStream.write(buffer, 0, bytesRead);
-					}
-					imageData = outputStream.toByteArray();
-				}
-			}
+	    try {
+	        Part imagePart = request.getPart("image");
+	        if (imagePart != null && imagePart.getSize() > 0) {
+	            try (InputStream inputStream = imagePart.getInputStream();
+	                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+	                byte[] buffer = new byte[4096];
+	                int bytesRead;
+	                while ((bytesRead = inputStream.read(buffer)) != -1) {
+	                    outputStream.write(buffer, 0, bytesRead);
+	                }
+	                imageData = outputStream.toByteArray();
+	            }
+	        }
 
-			FeedsDAO feedDao = new FeedsDAO();
-			try {
-				feedDao.open();
-				Feeds feed = new Feeds();
-				feed.setId(user.getId());
-				feed.setContent(content);
-				feed.setCreated_at(created_at);
-				if (imageData != null) {
-					Blob imageBlob = new javax.sql.rowset.serial.SerialBlob(imageData);
-					feed.setImage(imageBlob);
-				}
-				feedDao.write(feed);
-			} finally {
-				try {
-					feedDao.close();
-				} catch (SQLException ex) {
-					ex.printStackTrace();
-				}
-			}
+	        FeedsDAO feedDao = new FeedsDAO();
+	        try {
+	            feedDao.open();
+	            Feeds feed = new Feeds();
+	            feed.setId(user.getId());
+	            feed.setContent(content);
+	            feed.setCreated_at(created_at);
+	            feed.setPrivate(isPrivate);
+	            if (imageData != null) {
+	                Blob imageBlob = new javax.sql.rowset.serial.SerialBlob(imageData);
+	                feed.setImage(imageBlob);
+	            }
+	            feedDao.write(feed);
+	        } finally {
+	            try {
+	                feedDao.close();
+	            } catch (SQLException ex) {
+	                ex.printStackTrace();
+	            }
+	        }
 
-			List<Feeds> list = feedDao.getAll();
-			request.setAttribute("feedlist", list);
-			getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
+	        List<Feeds> list = feedDao.getAll(user.getId());
+	        request.setAttribute("feedlist", list);
+	        getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
 
-		} catch (IOException | ServletException e) {
-			e.printStackTrace();
-			throw new ServletException("Failed to upload image and write feed", e);
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new ServletException("Failed to write feed", e);
-		}
+	    } catch (IOException | ServletException e) {
+	        e.printStackTrace();
+	        throw new ServletException("Failed to upload image and write feed", e);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new ServletException("Failed to write feed", e);
+	    }
 	}
+
 
 	// 게시글 삭제 로직 추가
 	private void delFeeds(HttpServletRequest request, HttpServletResponse response)
@@ -295,7 +298,7 @@ public class snsController extends HttpServlet {
 
 	        feedDao.delFeeds(aid);
 	        // 게시글 삭제 후 목록 페이지로 이동
-	        List<Feeds> list = feedDao.getAll();
+	        List<Feeds> list = feedDao.getAll(user.getId());
 	        request.setAttribute("feedlist", list);
 	        getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
 	    } catch (SQLException e) {
@@ -358,10 +361,10 @@ public class snsController extends HttpServlet {
 	    }
 	}
 	
-	private void listFeeds(HttpServletRequest request, HttpServletResponse response) // 수정 관련 메시지
+	private void listFeeds(HttpServletRequest request, HttpServletResponse response, Users user) // 수정 관련 메시지
 	        throws ServletException, IOException {
 	    FeedsDAO feedDao = new FeedsDAO();
-	    List<Feeds> list = feedDao.getAll();
+	    List<Feeds> list = feedDao.getAll(user.getId());
 	    request.setAttribute("feedlist", list);
 	    getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
 	}
@@ -431,12 +434,13 @@ public class snsController extends HttpServlet {
 	    }
 	}
 
+
 	// "전체 글 보기" 기능을 위한 메서드 추가
-	private void showAllFeeds(HttpServletRequest request, HttpServletResponse response, FeedsDAO feedDao)
+	private void showAllFeeds(HttpServletRequest request, HttpServletResponse response, FeedsDAO feedDao, Users user)
 	        throws ServletException, IOException {
 	    try {
 	        feedDao.open();
-	        List<Feeds> allFeedsList = feedDao.getAll();
+	        List<Feeds> allFeedsList = feedDao.getAll(user.getId());
 	        request.getSession().removeAttribute("showMyFeeds");
 	        request.setAttribute("feedlist", allFeedsList);
 	        getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
@@ -451,4 +455,6 @@ public class snsController extends HttpServlet {
 	        }
 	    }
 	}
+
+
 }
