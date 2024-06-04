@@ -113,6 +113,8 @@ public class snsController extends HttpServlet {
 			case "updateFeed":
 				updateFeed(request, response, feedDao);
 				break;
+			case "listFeeds":
+                listFeeds(request, response);
 			default:
 				// 정의되지 않은 action 값에 대한 처리
 				response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -273,26 +275,35 @@ public class snsController extends HttpServlet {
 
 	// 게시글 삭제 로직 추가
 	private void delFeeds(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		int aid = Integer.parseInt(request.getParameter("aid"));
-		FeedsDAO feedDao = new FeedsDAO();
-		try {
-			feedDao.open();
-			feedDao.delFeeds(aid);
-			// 게시글 삭제 후 목록 페이지로 이동
-			List<Feeds> list = feedDao.getAll();
-			request.setAttribute("feedlist", list);
-			getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
-		} catch (SQLException e) {
-			e.printStackTrace();
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to delete news");
-		} finally {
-			try {
-				feedDao.close();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		}
+	        throws ServletException, IOException {
+	    int aid = Integer.parseInt(request.getParameter("aid"));
+	    FeedsDAO feedDao = new FeedsDAO();
+	    try {
+	        feedDao.open();
+	        Feeds feed = feedDao.getFeedById(aid);
+	        Users user = (Users) request.getSession().getAttribute("user");
+	        
+	        // 권한 확인
+	        if (user == null || !feed.getId().equals(user.getId())) {
+	            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission denied");
+	            return;
+	        }
+
+	        feedDao.delFeeds(aid);
+	        // 게시글 삭제 후 목록 페이지로 이동
+	        List<Feeds> list = feedDao.getAll();
+	        request.setAttribute("feedlist", list);
+	        getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to delete news");
+	    } finally {
+	        try {
+	            feedDao.close();
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+	    }
 	}
 
 	private void viewFeed(HttpServletRequest request, HttpServletResponse response)
@@ -321,50 +332,78 @@ public class snsController extends HttpServlet {
 	}
 
 	private void editFeed(HttpServletRequest request, HttpServletResponse response, FeedsDAO feedDao)
-			throws ServletException, IOException {
-		int aid = Integer.parseInt(request.getParameter("aid"));
-		try {
-			Feeds feed = feedDao.getFeedById(aid);
-			request.setAttribute("feed", feed);
-			request.getRequestDispatcher("/editFeed.jsp").forward(request, response);
-		} catch (SQLException e) {
-			e.printStackTrace();
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to get feed for editing");
-		}
+	        throws ServletException, IOException {
+	    int aid = Integer.parseInt(request.getParameter("aid"));
+	    try {
+	        Feeds feed = feedDao.getFeedById(aid);
+	        Users user = (Users) request.getSession().getAttribute("user");
+
+	        // 권한 확인
+	        if (user == null || !feed.getId().equals(user.getId())) {
+	            request.setAttribute("errorMessage", "작성자만 수정이 가능합니다");
+	            request.setAttribute("feed", feed);
+	            getServletContext().getRequestDispatcher("/feedView.jsp").forward(request, response);
+	            return;
+	        }
+
+	        request.setAttribute("feed", feed);
+	        request.getRequestDispatcher("/editFeed.jsp").forward(request, response);
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to get feed for editing");
+	    }
+	}
+	
+	private void listFeeds(HttpServletRequest request, HttpServletResponse response) // 수정 관련 메시지
+	        throws ServletException, IOException {
+	    FeedsDAO feedDao = new FeedsDAO();
+	    List<Feeds> list = feedDao.getAll();
+	    request.setAttribute("feedlist", list);
+	    getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
 	}
 
+
+
 	private void updateFeed(HttpServletRequest request, HttpServletResponse response, FeedsDAO feedDao)
-			throws ServletException, IOException {
-		int aid = Integer.parseInt(request.getParameter("aid"));
-		String content = request.getParameter("content");
-		Blob imageBlob = null;
+	        throws ServletException, IOException {
+	    int aid = Integer.parseInt(request.getParameter("aid"));
+	    String content = request.getParameter("content");
+	    Blob imageBlob = null;
 
-		// 이미지 파일 업로드 처리
-		Part filePart = request.getPart("uploadFile");
-		if (filePart != null && filePart.getSize() > 0) {
-			try {
-				InputStream fileContent = filePart.getInputStream();
-				byte[] imageData = fileContent.readAllBytes();
-				imageBlob = new SerialBlob(imageData);
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new ServletException("Failed to process image file", e);
-			}
-		}
+	    // 이미지 파일 업로드 처리
+	    Part filePart = request.getPart("uploadFile");
+	    if (filePart != null && filePart.getSize() > 0) {
+	        try {
+	            InputStream fileContent = filePart.getInputStream();
+	            byte[] imageData = fileContent.readAllBytes();
+	            imageBlob = new SerialBlob(imageData);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            throw new ServletException("Failed to process image file", e);
+	        }
+	    }
 
-		// 게시글 업데이트
-		try {
-			Feeds feed = feedDao.getFeedById(aid);
-			feed.setContent(content);
-			if (imageBlob != null) {
-				feed.setImage(imageBlob);
-			}
-			feedDao.updateFeed(feed);
-			response.sendRedirect("snsController?action=viewFeed&aid=" + aid);
-		} catch (SQLException e) {
-			e.printStackTrace();
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to update feed");
-		}
+	    // 게시글 업데이트
+	    try {
+	        Feeds feed = feedDao.getFeedById(aid);
+	        Users user = (Users) request.getSession().getAttribute("user");
+
+	        // 권한 확인
+	        if (user == null || !feed.getId().equals(user.getId())) {
+	            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission denied");
+	            return;
+	        }
+
+	        feed.setContent(content);
+	        if (imageBlob != null) {
+	            feed.setImage(imageBlob);
+	        }
+	        feedDao.updateFeed(feed);
+	        response.sendRedirect("snsController?action=viewFeed&aid=" + aid);
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to update feed");
+	    }
 	}
 
 }
