@@ -176,5 +176,30 @@ public class FeedsDAO {
  	    }
  	    return img;
  	}
+ 	
+    // 사용자의 글만 가져오는 메서드 추가
+ 	public List<Feeds> getFeedsByUserId(String userId) throws SQLException {
+ 	    open();
+ 	    List<Feeds> feedsList = new ArrayList<>();
+ 	    String sql = "SELECT * FROM Feeds WHERE id = ?";
+ 	    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+ 	        pstmt.setString(1, userId);
+ 	        try (ResultSet rs = pstmt.executeQuery()) {
+ 	            while (rs.next()) {
+ 	                int aid = rs.getInt("aid");
+ 	                String id = rs.getString("id");
+ 	                Blob image = rs.getBlob("image");
+ 	                String content = rs.getString("content");
+ 	                Timestamp created_At = rs.getTimestamp("created_at");
+ 	                Feeds feed = new Feeds(aid, id, image, content, created_At);
+ 	                feedsList.add(feed);
+ 	            }
+ 	        }
+ 	    } finally {
+ 	        close();
+ 	    }
+ 	    return feedsList;
+ 	}
+
 
 }

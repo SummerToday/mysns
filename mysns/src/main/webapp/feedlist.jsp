@@ -28,6 +28,18 @@ if(session.getAttribute("login_id") == null) {
         <form method="post" action="/mysns/snsController?action=logout">
         <td colspan="2" align="right" height="40"><input type="submit" value="로그아웃"></td>
         </form>
+        <c:choose>
+            <c:when test="${not empty sessionScope.showMyFeeds}">
+                <form method="post" action="/mysns/snsController?action=showAllFeeds">
+                <td colspan="2" align="right" height="40"><input type="submit" value="전체 글 보기"></td>
+                </form>
+            </c:when>
+            <c:otherwise>
+                <form method="post" action="/mysns/snsController?action=myFeeds">
+                <td colspan="2" align="right" height="40"><input type="submit" value="내가 쓴 글만 보기"></td>
+                </form>
+            </c:otherwise>
+        </c:choose>
     </tr>
     <c:forEach var="feeds" items="${feedlist}" varStatus="status">
         <tr class="table-row" onclick="goToDetail(${feeds.aid})">

@@ -115,6 +115,10 @@ public class snsController extends HttpServlet {
 				break;
 			case "listFeeds":
                 listFeeds(request, response);
+			case "myFeeds":
+                myFeeds(request, response, feedDao, user);
+			case "showAllFeeds":
+                showAllFeeds(request, response, feedDao);
 			default:
 				// 정의되지 않은 action 값에 대한 처리
 				response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -406,4 +410,45 @@ public class snsController extends HttpServlet {
 	    }
 	}
 
+	// "내가 쓴 글만 보기" 기능을 위한 메서드 추가
+	private void myFeeds(HttpServletRequest request, HttpServletResponse response, FeedsDAO feedDao, Users user)
+	        throws ServletException, IOException {
+	    try {
+	        feedDao.open();
+	        List<Feeds> myFeedsList = feedDao.getFeedsByUserId(user.getId());
+	        request.getSession().setAttribute("showMyFeeds", true);
+	        request.setAttribute("feedlist", myFeedsList);
+	        getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to retrieve feeds");
+	    } finally {
+	        try {
+	            feedDao.close();
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+	    }
+	}
+
+	// "전체 글 보기" 기능을 위한 메서드 추가
+	private void showAllFeeds(HttpServletRequest request, HttpServletResponse response, FeedsDAO feedDao)
+	        throws ServletException, IOException {
+	    try {
+	        feedDao.open();
+	        List<Feeds> allFeedsList = feedDao.getAll();
+	        request.getSession().removeAttribute("showMyFeeds");
+	        request.setAttribute("feedlist", allFeedsList);
+	        getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to retrieve feeds");
+	    } finally {
+	        try {
+	            feedDao.close();
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+	    }
+	}
 }
