@@ -58,7 +58,11 @@ if(session.getAttribute("login_id") == null) {
     </tr>
     <c:forEach var="feeds" items="${feedlist}" varStatus="status">
         <tr class="table-row" onclick="goToDetail(${feeds.aid})">
-            <td colspan="2" align="left" height="40">${feeds.id}</td>
+            <td colspan="2" align="left" height="40">${feeds.id} 
+                <c:if test="${feeds.is_Private}">
+                    <span style="color:red">(비공개)</span>
+                </c:if>
+            </td>
             <td colspan="2" align="right" height="40">${feeds.created_at}</td>
         </tr>
         <tr class="table-row" onclick="goToDetail(${feeds.aid})">

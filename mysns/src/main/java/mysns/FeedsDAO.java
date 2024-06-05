@@ -55,7 +55,7 @@ public class FeedsDAO {
 			pstmt.setBlob(2, feed.getImage());
 			pstmt.setString(3, feed.getContent());
 			pstmt.setTimestamp(4, feed.getCreated_at());
-			pstmt.setBoolean(5, feed.isPrivate());
+			pstmt.setBoolean(5, feed.getIs_Private());
 			pstmt.executeUpdate();
 			System.out.println("Feed added successfully.");
 		} catch (SQLException e) {
@@ -67,7 +67,7 @@ public class FeedsDAO {
 	public List<Feeds> getAll(String userId) {
 		open();
 		List<Feeds> feedsList = new ArrayList<>();
-		String sql = "SELECT * FROM Feeds WHERE is_private = FALSE OR id = ?";
+		String sql = "SELECT * FROM Feeds WHERE is_private = FALSE OR id = ? ORDER BY likeCount DESC";
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, userId);
 			try (ResultSet rs = pstmt.executeQuery()) {
@@ -185,7 +185,7 @@ public class FeedsDAO {
 	public List<Feeds> getFeedsByUserId(String userId) throws SQLException {
 		open();
 		List<Feeds> feedsList = new ArrayList<>();
-		String sql = "SELECT * FROM Feeds WHERE id = ?";
+		String sql = "SELECT * FROM Feeds WHERE id = ? ORDER BY likeCount DESC";
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, userId);
 			try (ResultSet rs = pstmt.executeQuery()) {
@@ -196,7 +196,9 @@ public class FeedsDAO {
 					String content = rs.getString("content");
 					Timestamp created_At = rs.getTimestamp("created_at");
 					boolean isPrivate = rs.getBoolean("is_private");
-					Feeds feed = new Feeds(aid, id, image, content, created_At, isPrivate);
+					int likeCount = rs.getInt("likeCount");
+
+	                Feeds feed = new Feeds(aid, id, content, created_At, image, isPrivate, likeCount);
 					feedsList.add(feed);
 				}
 			}

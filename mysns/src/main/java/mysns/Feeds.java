@@ -89,14 +89,16 @@ public class Feeds {
 	public void setCreated_at(Timestamp created_at) {
 		this.created_at = created_at;
 	}
-
-	public boolean isPrivate() {
+	
+	public boolean getIs_Private() {
 		return is_Private;
 	}
 
-	public void setPrivate(boolean isPrivate) {
-		this.is_Private = isPrivate;
+	public void setIs_Private(boolean is_Private) {
+		this.is_Private = is_Private;
 	}
+
+
 	
 	public int getLikeCount() {
         return likeCount;

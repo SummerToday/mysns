@@ -251,7 +251,7 @@ public class snsController extends HttpServlet {
 		}
 
 		String content = request.getParameter("content");
-		boolean isPrivate = "true".equals(request.getParameter("private"));
+		boolean is_Private = "true".equals(request.getParameter("private"));
 		Timestamp created_at = new Timestamp(System.currentTimeMillis());
 		byte[] imageData = null;
 
@@ -276,7 +276,7 @@ public class snsController extends HttpServlet {
 				feed.setId(user.getId());
 				feed.setContent(content);
 				feed.setCreated_at(created_at);
-				feed.setPrivate(isPrivate);
+				feed.setIs_Private(is_Private);
 				if (imageData != null) {
 					Blob imageBlob = new javax.sql.rowset.serial.SerialBlob(imageData);
 					feed.setImage(imageBlob);
