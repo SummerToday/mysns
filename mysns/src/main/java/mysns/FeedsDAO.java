@@ -63,7 +63,7 @@ public class FeedsDAO {
 			throw new RuntimeException("Failed to add feed.");
 		}
 	}
-
+    
 	public List<Feeds> getAll(String userId) {
 		open();
 		List<Feeds> feedsList = new ArrayList<>();
@@ -78,7 +78,9 @@ public class FeedsDAO {
 					String content = rs.getString("content");
 					Timestamp created_At = rs.getTimestamp("created_at");
 					boolean isPrivate = rs.getBoolean("is_private");
-					Feeds feed = new Feeds(aid, id, image, content, created_At, isPrivate);
+					int likeCount = rs.getInt("likeCount"); // likeCount 추가
+
+			        Feeds feed = new Feeds(aid, id, content, created_At, image, isPrivate, likeCount);
 					feedsList.add(feed);
 				}
 			}
@@ -97,15 +99,19 @@ public class FeedsDAO {
 
 	// 게시글 삭제를 위한 delFeeds 메서드
 	public void delFeeds(int aid) throws SQLException {
-		String sql = "DELETE FROM Feeds WHERE aid = ?";
-		try (PreparedStatement statement = conn.prepareStatement(sql)) {
-			statement.setInt(1, aid);
-			int rowsAffected = statement.executeUpdate();
-			if (rowsAffected == 0) {
-				throw new SQLException("Feeds with aid " + aid + " not found");
-			}
-		}
+	    String sql = "DELETE FROM feeds WHERE aid = ?";
+	    open(); // 연결 열기
+	    try (PreparedStatement statement = conn.prepareStatement(sql)) {
+	        statement.setInt(1, aid);
+	        int rowsAffected = statement.executeUpdate();
+	        if (rowsAffected == 0) {
+	            throw new SQLException("Feeds with aid " + aid + " not found");
+	        }
+	    } finally {
+	        close(); // 연결 닫기
+	    }
 	}
+
 
 	public Feeds getFeedById(int aid) throws SQLException {
 		open(); // 데이터베이스 연결 설정
@@ -199,5 +205,20 @@ public class FeedsDAO {
 		}
 		return feedsList;
 	}
+	
+	public boolean likeFeed(int aid) throws SQLException {
+        String sql = "UPDATE feeds SET likeCount = likeCount + 1 WHERE aid = ?";
+        open();
+
+        PreparedStatement statement = conn.prepareStatement(sql);
+        statement.setInt(1, aid);
+
+        boolean rowUpdated = statement.executeUpdate() > 0;
+        statement.close();
+        close();
+        return rowUpdated;
+    }
+	
+	
 
 }

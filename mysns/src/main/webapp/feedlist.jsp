@@ -10,6 +10,21 @@
 function goToDetail(aid) {
     window.location.href = 'snsController?action=viewFeed&aid=' + aid;
 }
+
+function likeFeed(aid) {
+    fetch('snsController?action=likeFeed&aid=' + aid, {
+        method: 'POST'
+    })
+    .then(response => response.text())
+    .then(data => {
+        if(data === 'success') {
+            const likeCountElement = document.getElementById('likeCount_' + aid);
+            likeCountElement.innerText = parseInt(likeCountElement.innerText) + 1;
+        } else {
+            alert('Failed to like the feed.');
+        }
+    });
+}
 </script>
 </head>
 <body>
@@ -49,12 +64,16 @@ if(session.getAttribute("login_id") == null) {
         <tr class="table-row" onclick="goToDetail(${feeds.aid})">
             <td><img src="snsController?aid=${feeds.aid}" alt="Feed Image"></td>
         </tr>
-        <tr class="table-row" onclick="goToDetail(${feeds.aid})">
+        <tr class="table-row">
             <td><b>${feeds.content}</b></td>
             <td>
                 <c:if test="${feeds.id == sessionScope.user.id}">
                     <a href="snsController?action=delFeeds&aid=${feeds.aid}" onclick="return confirm('Are you sure you want to delete this feed?')">Delete</a>
                 </c:if>
+            </td>
+            <td>
+                <button onclick="likeFeed(${feeds.aid})">Like</button>
+                <span id="likeCount_${feeds.aid}">${feeds.likeCount}</span>
             </td>
         </tr>
     </c:forEach>

@@ -9,7 +9,8 @@ public class Feeds {
 	private Blob image;
 	private String content;
 	private Timestamp created_at;
-	private boolean isPrivate;
+	private boolean is_Private;
+	private int likeCount;
 
 	public int getAid() {
 		return aid;
@@ -44,8 +45,18 @@ public class Feeds {
 		this.image = image;
 		this.content = content;
 		this.created_at = created_at;
-		this.isPrivate = isPrivate;
+		this.is_Private = isPrivate;
 	}
+	
+	public Feeds(int aid, String id, String content, Timestamp created_at, Blob image, boolean isPrivate, int likeCount) {
+        this.aid = aid;
+        this.id = id;
+        this.content = content;
+        this.created_at = created_at;
+        this.image = image;
+        this.is_Private = isPrivate;
+        this.likeCount = likeCount;
+    }
 
 	public String getId() {
 		return id;
@@ -80,11 +91,19 @@ public class Feeds {
 	}
 
 	public boolean isPrivate() {
-		return isPrivate;
+		return is_Private;
 	}
 
 	public void setPrivate(boolean isPrivate) {
-		this.isPrivate = isPrivate;
+		this.is_Private = isPrivate;
 	}
+	
+	public int getLikeCount() {
+        return likeCount;
+    }
+
+    public void setLikeCount(int likeCount) {
+        this.likeCount = likeCount;
+    }
 
 }
