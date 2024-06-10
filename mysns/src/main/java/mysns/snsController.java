@@ -174,83 +174,81 @@ public class snsController extends HttpServlet {
 	}
 
 	protected void login(HttpServletRequest request, HttpServletResponse response)
-	        throws ServletException, IOException {
-	    String id = request.getParameter("id");
-	    String password = request.getParameter("password");
-	    String rememberMe = request.getParameter("rememberMe");
+			throws ServletException, IOException {
+		String id = request.getParameter("id");
+		String password = request.getParameter("password");
+		String rememberMe = request.getParameter("rememberMe");
 
-	    UsersDAO userDao = new UsersDAO();
-	    Users user = null;
-	    try {
-	        userDao.open();
-	        user = userDao.login(id, password);
-	    } catch (SQLException e) {
-	        throw new ServletException("Database error during login", e);
-	    } finally {
-	        try {
-	            userDao.close();
-	        } catch (SQLException ex) {
-	            ex.printStackTrace();
-	        }
-	    }
+		UsersDAO userDao = new UsersDAO();
+		Users user = null;
+		try {
+			userDao.open();
+			user = userDao.login(id, password);
+		} catch (SQLException e) {
+			throw new ServletException("Database error during login", e);
+		} finally {
+			try {
+				userDao.close();
+			} catch (SQLException ex) {
+				ex.printStackTrace();
+			}
+		}
 
-	    if (user != null) {
-	        HttpSession session = request.getSession();
-	        session.setAttribute("user", user);
-	        session.setAttribute("username", user.getName()); // 사용자 이름 저장
-	        session.setAttribute("loginTime", new Date()); // 로그인 시간 저장
-	        session.setAttribute("login_id", id); // 로그인 ID 저장
+		if (user != null) {
+			HttpSession session = request.getSession();
+			session.setAttribute("user", user);
+			session.setAttribute("username", user.getName()); // 사용자 이름 저장
+			session.setAttribute("loginTime", new Date()); // 로그인 시간 저장
+			session.setAttribute("login_id", id); // 로그인 ID 저장
 
-	        // 방문 횟수 증가 - 사용자별 쿠키 사용
-	        int visitCount = 1; // 기본값을 1로 설정
-	        boolean cookieExists = false;
-	        Cookie[] cookies = request.getCookies();
-	        
-	        if (cookies != null) {
-	            for (Cookie cookie : cookies) {
-	                if (cookie.getName().equals("visitCount_" + id)) {
-	                    visitCount = Integer.parseInt(cookie.getValue()) + 1; // 방문 횟수 증가
-	                    cookie.setValue(String.valueOf(visitCount));
-	                    response.addCookie(cookie); // 쿠키 업데이트
-	                    cookieExists = true;
-	                    break;
-	                }
-	            }
-	        }
+			// 방문 횟수 증가 - 사용자별 쿠키 사용
+			int visitCount = 1; // 기본값을 1로 설정
+			boolean cookieExists = false;
+			Cookie[] cookies = request.getCookies();
 
-	        if (!cookieExists) {
-	            // 쿠키가 없는 경우 새로운 쿠키 생성
-	            Cookie visitCountCookie = new Cookie("visitCount_" + id, String.valueOf(visitCount));
-	            visitCountCookie.setMaxAge(7 * 24 * 60 * 60); // 7일 동안 유지
-	            response.addCookie(visitCountCookie);
-	        }
+			if (cookies != null) {
+				for (Cookie cookie : cookies) {
+					if (cookie.getName().equals("visitCount_" + id)) {
+						visitCount = Integer.parseInt(cookie.getValue()) + 1; // 방문 횟수 증가
+						cookie.setValue(String.valueOf(visitCount));
+						response.addCookie(cookie); // 쿠키 업데이트
+						cookieExists = true;
+						break;
+					}
+				}
+			}
 
-	        if ("true".equals(rememberMe)) {
-	            Cookie loginCookie = new Cookie("login_id", id);
-	            loginCookie.setMaxAge(7 * 24 * 60 * 60); // 7일 동안 유지
-	            response.addCookie(loginCookie);
-	        }
+			if (!cookieExists) {
+				// 쿠키가 없는 경우 새로운 쿠키 생성
+				Cookie visitCountCookie = new Cookie("visitCount_" + id, String.valueOf(visitCount));
+				visitCountCookie.setMaxAge(7 * 24 * 60 * 60); // 7일 동안 유지
+				response.addCookie(visitCountCookie);
+			}
 
-	        FeedsDAO feedDao = new FeedsDAO();
-	        try {
-	            List<Feeds> list = feedDao.getAll(user.getId());
-	            request.setAttribute("feedlist", list);
-	            getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
-	        } catch (Exception e) {
-	            throw new ServletException("Failed to retrieve feed list after login", e);
-	        } finally {
-	            try {
-	                feedDao.close();
-	            } catch (SQLException ex) {
-	                ex.printStackTrace();
-	            }
-	        }
-	    } else {
-	        response.sendRedirect("login.jsp");
-	    }
+			if ("true".equals(rememberMe)) {
+				Cookie loginCookie = new Cookie("login_id", id);
+				loginCookie.setMaxAge(7 * 24 * 60 * 60); // 7일 동안 유지
+				response.addCookie(loginCookie);
+			}
+
+			FeedsDAO feedDao = new FeedsDAO();
+			try {
+				List<Feeds> list = feedDao.getAll(user.getId());
+				request.setAttribute("feedlist", list);
+				getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
+			} catch (Exception e) {
+				throw new ServletException("Failed to retrieve feed list after login", e);
+			} finally {
+				try {
+					feedDao.close();
+				} catch (SQLException ex) {
+					ex.printStackTrace();
+				}
+			}
+		} else {
+			response.sendRedirect("login.jsp");
+		}
 	}
-
-
 
 	// 로그아웃 메소드
 	protected void logout(HttpServletRequest request, HttpServletResponse response)
