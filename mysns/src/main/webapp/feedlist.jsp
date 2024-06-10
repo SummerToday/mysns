@@ -1,6 +1,6 @@
-<%@ page language="java" contentType="text/html; charset=EUC-KR"
-    pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=EUC-KR" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ page import="java.util.Date" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -32,7 +32,14 @@ function likeFeed(aid) {
 if(session.getAttribute("login_id") == null) {
     session.setAttribute("login_id", request.getParameter("id"));
 }
+
+String username = (String) session.getAttribute("username");
+Date loginTime = (Date) session.getAttribute("loginTime");
 %>
+<div style="position: absolute; top: 10px; right: 10px;">
+    <p>이름: <strong><%= username %></strong></p>
+    <p>로그인 시간: <strong><%= loginTime %></strong></p>
+</div>
 <table align="center">
     <tr>
         <td colspan="2" align="left" height="40"><b>작성글 리스트</b></td>

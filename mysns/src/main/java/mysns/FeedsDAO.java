@@ -21,9 +21,9 @@ public class FeedsDAO {
 	// 데이터베이스 연결을 위한 open 메서드
 	public void open() {
 		// H2 Database 연결 정보
-		String url = "jdbc:h2:tcp://localhost/~/practice1";
-		String user = "practice1";
-		String password = "1234";
+		String url = "jdbc:h2:tcp://localhost/~/test";
+		String user = "tset";
+		String password = "123";
 
 		try {
 			Class.forName("org.h2.Driver");
@@ -209,8 +209,8 @@ public class FeedsDAO {
 	}
 	
 	public boolean likeFeed(int aid) throws SQLException {
-        String sql = "UPDATE feeds SET likeCount = likeCount + 1 WHERE aid = ?";
         open();
+        String sql = "UPDATE feeds SET likeCount = likeCount + 1 WHERE aid = ?";
 
         PreparedStatement statement = conn.prepareStatement(sql);
         statement.setInt(1, aid);

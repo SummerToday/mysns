@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 
 import javax.sql.rowset.serial.SerialBlob;
@@ -173,54 +174,56 @@ public class snsController extends HttpServlet {
 
 	// 로그인 기능 - 자동 로그인 기능 추가
 	protected void login(HttpServletRequest request, HttpServletResponse response)
-	        throws ServletException, IOException {
-	    String id = request.getParameter("id");
-	    String password = request.getParameter("password");
-	    String rememberMe = request.getParameter("rememberMe");
+            throws ServletException, IOException {
+        String id = request.getParameter("id");
+        String password = request.getParameter("password");
+        String rememberMe = request.getParameter("rememberMe");
 
-	    UsersDAO userDao = new UsersDAO();
-	    Users user = null;
-	    try {
-	        userDao.open();
-	        user = userDao.login(id, password);
-	    } catch (SQLException e) {
-	        throw new ServletException("Database error during login", e);
-	    } finally {
-	        try {
-	            userDao.close();
-	        } catch (SQLException ex) {
-	            ex.printStackTrace();
-	        }
-	    }
+        UsersDAO userDao = new UsersDAO();
+        Users user = null;
+        try {
+            userDao.open();
+            user = userDao.login(id, password);
+        } catch (SQLException e) {
+            throw new ServletException("Database error during login", e);
+        } finally {
+            try {
+                userDao.close();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
 
-	    if (user != null) {
-	        HttpSession session = request.getSession();
-	        session.setAttribute("user", user);
+        if (user != null) {
+            HttpSession session = request.getSession();
+            session.setAttribute("user", user);
+            session.setAttribute("username", user.getName()); // 사용자 이름 저장
+            session.setAttribute("loginTime", new Date()); // 로그인 시간 저장
 
-	        if ("true".equals(rememberMe)) {
-	            Cookie loginCookie = new Cookie("login_id", id);
-	            loginCookie.setMaxAge(7 * 24 * 60 * 60); // 7일 동안 유지
-	            response.addCookie(loginCookie);
-	        }
+            if ("true".equals(rememberMe)) {
+                Cookie loginCookie = new Cookie("login_id", id);
+                loginCookie.setMaxAge(7 * 24 * 60 * 60); // 7일 동안 유지
+                response.addCookie(loginCookie);
+            }
 
-	        FeedsDAO feedDao = new FeedsDAO();
-	        try {
-	            List<Feeds> list = feedDao.getAll(user.getId());
-	            request.setAttribute("feedlist", list);
-	            getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
-	        } catch (Exception e) {
-	            throw new ServletException("Failed to retrieve feed list after login", e);
-	        } finally {
-	            try {
-	                feedDao.close();
-	            } catch (SQLException ex) {
-	                ex.printStackTrace();
-	            }
-	        }
-	    } else {
-	        response.sendRedirect("login.jsp");
-	    }
-	}
+            FeedsDAO feedDao = new FeedsDAO();
+            try {
+                List<Feeds> list = feedDao.getAll(user.getId());
+                request.setAttribute("feedlist", list);
+                getServletContext().getRequestDispatcher("/feedlist.jsp").forward(request, response);
+            } catch (Exception e) {
+                throw new ServletException("Failed to retrieve feed list after login", e);
+            } finally {
+                try {
+                    feedDao.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        } else {
+            response.sendRedirect("login.jsp");
+        }
+    }
 
 
 	// 로그아웃 메소드
