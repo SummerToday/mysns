@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=EUC-KR" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ page import="java.util.Date" %>
+<%@ page import="jakarta.servlet.http.Cookie" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -28,16 +29,27 @@ function likeFeed(aid) {
 </script>
 </head>
 <body>
+<%!
+    public int getVisitCount(Cookie[] cookies, String name) {
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals(name)) {
+                    return Integer.parseInt(cookie.getValue());
+                }
+            }
+        }
+        return 1; // 기본값
+    }
+%>
 <%
-if(session.getAttribute("login_id") == null) {
-    session.setAttribute("login_id", request.getParameter("id"));
-}
-
 String username = (String) session.getAttribute("username");
 Date loginTime = (Date) session.getAttribute("loginTime");
+String loginId = (String) session.getAttribute("login_id");
+
+int visitCount = getVisitCount(request.getCookies(), "visitCount_" + loginId);
 %>
 <div style="position: absolute; top: 10px; right: 10px;">
-    <p>이름: <strong><%= username %></strong></p>
+    <p>'<strong><%= username %></strong>'님의 <strong><%= visitCount %></strong>번째 방문입니다.</p>
     <p>로그인 시간: <strong><%= loginTime %></strong></p>
 </div>
 <table align="center">
